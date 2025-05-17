@@ -1,0 +1,39 @@
+@ASE.API_HostAddress = http://localhost:5000
+
+###
+# Anomaly Detection Endpoints
+###
+
+# Get anomalies for a specific submission
+GET {{ASE.API_HostAddress}}/api/finance-submissions/1/anomalies
+Accept: application/json
+
+###
+
+# Detect global anomalies across all submissions
+GET {{ASE.API_HostAddress}}/api/anomalies/detect-global
+Accept: application/json
+
+###
+
+# Detect anomalies for a specific dealer
+GET {{ASE.API_HostAddress}}/api/dealers/1/anomalies
+Accept: application/json
+
+###
+
+# Detect data patterns in a submission
+GET {{ASE.API_HostAddress}}/api/finance-submissions/1/patterns
+Accept: application/json
+
+###
+
+# Test with a different submission (if available)
+GET {{ASE.API_HostAddress}}/api/finance-submissions/2/anomalies
+Accept: application/json
+
+###
+
+# Test with a different dealer (if available)
+GET {{ASE.API_HostAddress}}/api/dealers/2/anomalies
+Accept: application/json 

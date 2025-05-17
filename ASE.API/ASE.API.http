@@ -1,0 +1,196 @@
+@ASE.API_HostAddress = http://localhost:5000
+
+###
+# Dealer Endpoints
+###
+
+# Get all dealers
+GET {{ASE.API_HostAddress}}/api/dealers
+Accept: application/json
+
+###
+
+# Get dealer by ID
+GET {{ASE.API_HostAddress}}/api/dealers/1
+Accept: application/json
+
+###
+
+# Create a dealer
+POST {{ASE.API_HostAddress}}/api/dealers
+Content-Type: application/json
+
+{
+  "name": "ABC Motors",
+  "address": "123 Main St",
+  "city": "Anytown",
+  "state": "CA",
+  "country": "USA",
+  "postalCode": "90210",
+  "phone": "555-1234",
+  "email": "contact@abcmotors.com"
+}
+
+###
+
+# Update a dealer
+PUT {{ASE.API_HostAddress}}/api/dealers/1
+Content-Type: application/json
+
+{
+  "name": "ABC Motors Updated",
+  "address": "456 Oak St",
+  "city": "Somewhere",
+  "state": "NY",
+  "country": "USA",
+  "postalCode": "10001",
+  "phone": "555-5678",
+  "email": "updated@abcmotors.com"
+}
+
+###
+
+# Delete a dealer
+DELETE {{ASE.API_HostAddress}}/api/dealers/2
+Accept: application/json
+
+###
+# Master Template Endpoints
+###
+
+# Get all master templates
+GET {{ASE.API_HostAddress}}/api/master-templates
+Accept: application/json
+
+###
+
+# Get master template by ID
+GET {{ASE.API_HostAddress}}/api/master-templates/1
+Accept: application/json
+
+###
+
+# Get master templates by year
+GET {{ASE.API_HostAddress}}/api/master-templates/year/2023
+Accept: application/json
+
+###
+
+# Create a master template
+POST {{ASE.API_HostAddress}}/api/master-templates
+Content-Type: application/json
+
+{
+  "name": "2023 Financial Template",
+  "year": 2023,
+  "sheets": [
+    {
+      "name": "Income Statement",
+      "pageNumber": 1,
+      "tables": [
+        {
+          "name": "Revenue",
+          "rowCount": 3,
+          "columnCount": 4,
+          "cells": [
+            {
+              "cellAddress": "A1",
+              "dataType": "text"
+            },
+            {
+              "cellAddress": "B1",
+              "dataType": "number"
+            },
+            {
+              "cellAddress": "C1",
+              "dataType": "number"
+            },
+            {
+              "cellAddress": "D1",
+              "dataType": "number"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+###
+# Finance Submission Endpoints
+###
+
+# Get all submissions
+GET {{ASE.API_HostAddress}}/api/finance-submissions
+Accept: application/json
+
+###
+
+# Get submission by ID
+GET {{ASE.API_HostAddress}}/api/finance-submissions/1
+Accept: application/json
+
+###
+
+# Get submissions by dealer
+GET {{ASE.API_HostAddress}}/api/dealers/1/finance-submissions
+Accept: application/json
+
+###
+
+# Create a finance submission
+POST {{ASE.API_HostAddress}}/api/finance-submissions
+Content-Type: application/json
+
+{
+  "title": "Q2 Financial Report",
+  "dealerId": 1,
+  "masterTemplateId": 1,
+  "month": 6,
+  "year": 2023,
+  "data": [
+    {
+      "cellAddress": "A1",
+      "value": 370000,
+      "aggregationType": "monthly"
+    },
+    {
+      "cellAddress": "B1",
+      "value": 250000,
+      "aggregationType": "monthly"
+    },
+    {
+      "cellAddress": "C1",
+      "value": 120000,
+      "aggregationType": "monthly"
+    }
+  ]
+}
+
+###
+# Anomaly Detection Endpoints
+###
+
+# Get anomalies for a submission
+GET {{ASE.API_HostAddress}}/api/finance-submissions/1/anomalies
+Accept: application/json
+
+###
+
+# Detect anomalies globally across all submissions
+GET {{ASE.API_HostAddress}}/api/anomalies/detect-global
+Accept: application/json
+
+###
+
+# Detect anomalies for a specific dealer
+GET {{ASE.API_HostAddress}}/api/dealers/1/anomalies
+Accept: application/json
+
+###
+
+# Detect data patterns in a submission
+GET {{ASE.API_HostAddress}}/api/finance-submissions/1/patterns
+Accept: application/json
+
+###

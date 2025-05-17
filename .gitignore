@@ -1,0 +1,42 @@
+# .NET build artifacts
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.cache
+*.vscode/
+*.idea/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Angular / Node.js
+node_modules/
+.angular/
+/dist
+/tmp
+/out-tsc
+.DS_Store
+npm-debug.log
+yarn-error.log 
