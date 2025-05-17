@@ -22,41 +22,138 @@ public static class DbInitializer
             return; // Database was already seeded
         }
         
-        // Seed 10 dealers
-        var dealers = new Dealer[]
+        // Seed 10 dealers in 3 groups
+        // Group 1: 3 dealers
+        var dealerGroup1 = new Dealer[]
         {
-            new Dealer { Name = "Ace Auto Group", Address = "123 Main St, Anytown, CA 90210", ContactPhone = "555-123-4567", ContactEmail = "contact@aceautogroup.com" },
-            new Dealer { Name = "Bayside Motors", Address = "456 Ocean Ave, Bayville, NY 11709", ContactPhone = "555-987-6543", ContactEmail = "info@baysidemotors.com" },
-            new Dealer { Name = "Crestview Automotive", Address = "789 Highland Dr, Crestview, TX 75001", ContactPhone = "555-456-7890", ContactEmail = "sales@crestviewauto.com" },
-            new Dealer { Name = "Downtown Cars", Address = "101 Market St, Downtown, IL 60601", ContactPhone = "555-789-0123", ContactEmail = "info@downtowncars.com" },
-            new Dealer { Name = "Eastern Motors", Address = "202 East Ave, Eastville, FL 33101", ContactPhone = "555-234-5678", ContactEmail = "contact@easternmotors.com" },
-            new Dealer { Name = "Fairview Dealership", Address = "303 Fair St, Fairview, WA 98101", ContactPhone = "555-345-6789", ContactEmail = "sales@fairviewdealership.com" },
-            new Dealer { Name = "Gateway Auto", Address = "404 Gateway Blvd, Gateway, AZ 85001", ContactPhone = "555-456-7890", ContactEmail = "info@gatewayauto.com" },
-            new Dealer { Name = "Highland Vehicles", Address = "505 High St, Highland, CO 80202", ContactPhone = "555-567-8901", ContactEmail = "contact@highlandvehicles.com" },
-            new Dealer { Name = "Island Cars", Address = "606 Island Ave, Islandtown, HI 96801", ContactPhone = "555-678-9012", ContactEmail = "sales@islandcars.com" },
-            new Dealer { Name = "Junction Motors", Address = "707 Junction Rd, Junction City, OR 97301", ContactPhone = "555-789-0123", ContactEmail = "info@junctionmotors.com" }
+            new Dealer { 
+                Name = "Ace Auto Group", 
+                Address = "123 Main St, Anytown, CA 90210", 
+                ContactPhone = "555-123-4567", 
+                ContactEmail = "contact@aceautogroup.com",
+                GroupId = 1,
+                GroupName = "Premium Auto Group"
+            },
+            new Dealer { 
+                Name = "Bayside Motors", 
+                Address = "456 Ocean Ave, Bayville, NY 11709", 
+                ContactPhone = "555-987-6543", 
+                ContactEmail = "info@baysidemotors.com",
+                GroupId = 1,
+                GroupName = "Premium Auto Group"
+            },
+            new Dealer { 
+                Name = "Crestview Automotive", 
+                Address = "789 Highland Dr, Crestview, TX 75001", 
+                ContactPhone = "555-456-7890", 
+                ContactEmail = "sales@crestviewauto.com",
+                GroupId = 1,
+                GroupName = "Premium Auto Group"
+            }
         };
         
-        await context.Dealers.AddRangeAsync(dealers);
-        await context.SaveChangesAsync();
-    
-        
-        var masterTemplate2024 = new MasterTemplate
+        // Group 2: 3 dealers
+        var dealerGroup2 = new Dealer[]
         {
-            Name = "Standard Financial Template 2024",
-            Year = 2024,
-            IsActive = true,
-            CreatedDate = new DateTime(2024, 1, 1)
+            new Dealer { 
+                Name = "Downtown Cars", 
+                Address = "101 Market St, Downtown, IL 60601", 
+                ContactPhone = "555-789-0123", 
+                ContactEmail = "info@downtowncars.com",
+                GroupId = 2,
+                GroupName = "Metro Dealership Network"
+            },
+            new Dealer { 
+                Name = "Eastern Motors", 
+                Address = "202 East Ave, Eastville, FL 33101", 
+                ContactPhone = "555-234-5678", 
+                ContactEmail = "contact@easternmotors.com",
+                GroupId = 2,
+                GroupName = "Metro Dealership Network"
+            },
+            new Dealer { 
+                Name = "Fairview Dealership", 
+                Address = "303 Fair St, Fairview, WA 98101", 
+                ContactPhone = "555-345-6789", 
+                ContactEmail = "sales@fairviewdealership.com",
+                GroupId = 2,
+                GroupName = "Metro Dealership Network"
+            }
         };
         
-        await context.MasterTemplates.AddRangeAsync(masterTemplate2024);
+        // Group 3: 4 dealers
+        var dealerGroup3 = new Dealer[]
+        {
+            new Dealer { 
+                Name = "Gateway Auto", 
+                Address = "404 Gateway Blvd, Gateway, AZ 85001", 
+                ContactPhone = "555-456-7890", 
+                ContactEmail = "info@gatewayauto.com",
+                GroupId = 3,
+                GroupName = "Regional Motors Alliance"
+            },
+            new Dealer { 
+                Name = "Highland Vehicles", 
+                Address = "505 High St, Highland, CO 80202", 
+                ContactPhone = "555-567-8901", 
+                ContactEmail = "contact@highlandvehicles.com",
+                GroupId = 3,
+                GroupName = "Regional Motors Alliance"
+            },
+            new Dealer { 
+                Name = "Island Cars", 
+                Address = "606 Island Ave, Islandtown, HI 96801", 
+                ContactPhone = "555-678-9012", 
+                ContactEmail = "sales@islandcars.com",
+                GroupId = 3,
+                GroupName = "Regional Motors Alliance"
+            },
+            new Dealer { 
+                Name = "Junction Motors", 
+                Address = "707 Junction Rd, Junction City, OR 97301", 
+                ContactPhone = "555-789-0123", 
+                ContactEmail = "info@junctionmotors.com",
+                GroupId = 3,
+                GroupName = "Regional Motors Alliance"
+            }
+        };
+        
+        // Combine all dealers into one array
+        var allDealers = dealerGroup1.Concat(dealerGroup2).Concat(dealerGroup3).ToArray();
+        
+        await context.Dealers.AddRangeAsync(allDealers);
         await context.SaveChangesAsync();
         
-        // Add sheets, tables and cells to 2024 template
-        await AddTemplateStructure(context, masterTemplate2024);
+        // Create master templates for each year (2020-2024)
+        var masterTemplates = new List<MasterTemplate>();
         
-        // Add submissions for 2024
-        await AddSubmissions(context, dealers, masterTemplate2024, 2024, 1, 12);
+        for (int year = 2020; year <= 2024; year++)
+        {
+            var template = new MasterTemplate
+            {
+                Name = $"Standard Financial Template {year}",
+                Year = year,
+                IsActive = year == 2024, // Only the latest is active
+                CreatedDate = new DateTime(year, 1, 1)
+            };
+            
+            masterTemplates.Add(template);
+        }
+        
+        await context.MasterTemplates.AddRangeAsync(masterTemplates);
+        await context.SaveChangesAsync();
+        
+        // Add sheets, tables and cells to each template
+        foreach (var template in masterTemplates)
+        {
+            await AddTemplateStructure(context, template);
+        }
+        
+        // Add submissions for each year and template
+        foreach (var template in masterTemplates)
+        {
+            await AddSubmissions(context, allDealers, template, template.Year, 1, 12);
+        }
     }
     
     private static async Task AddTemplateStructure(FinanceDbContext context, MasterTemplate template)
@@ -293,13 +390,28 @@ public static class DbInitializer
         {
             var dealer = dealers[dealerIndex];
             
-            // For dealer 8 (Highland Vehicles at index 7), initialize arithmetic progression
-            Dictionary<string, decimal> dealer8CellBaseValues = new Dictionary<string, decimal>();
-            Dictionary<string, decimal> dealer8CellIncrements = new Dictionary<string, decimal>();
+            // Setup special behavior for certain dealers
+            Dictionary<string, decimal> specialDealerBaseValues = new Dictionary<string, decimal>();
+            Dictionary<string, decimal> specialDealerIncrements = new Dictionary<string, decimal>();
             
-            if (dealerIndex == 7)
+            // For certain dealers, use progression values based on their group
+            if (dealer.GroupId == 1)
             {
-                InitializeDealer8ProgressionValues(templateCells, dealer8CellBaseValues, dealer8CellIncrements);
+                // Group 1 dealers have higher base values with moderate increments
+                InitializeProgressionValues(templateCells, specialDealerBaseValues, specialDealerIncrements, 
+                    baseValue: 200, increment: 15);
+            }
+            else if (dealer.GroupId == 2)
+            {
+                // Group 2 dealers have medium base values with steady increments
+                InitializeProgressionValues(templateCells, specialDealerBaseValues, specialDealerIncrements, 
+                    baseValue: 150, increment: 10);
+            }
+            else if (dealer.GroupId == 3)
+            {
+                // Group 3 dealers have lower base values with faster increments
+                InitializeProgressionValues(templateCells, specialDealerBaseValues, specialDealerIncrements, 
+                    baseValue: 100, increment: 20);
             }
             
             for (int month = startMonth; month <= endMonth; month++)
@@ -311,11 +423,12 @@ public static class DbInitializer
                 var submissionCells = CreateSubmissionCells(
                     templateCells, 
                     submission.Id, 
-                    dealerIndex, 
+                    dealer.GroupId, 
                     month, 
                     random, 
-                    dealer8CellBaseValues, 
-                    dealer8CellIncrements);
+                    specialDealerBaseValues, 
+                    specialDealerIncrements,
+                    year);
                 
                 // Add all submission cells at once for better performance
                 await context.AddRangeAsync(submissionCells);
@@ -331,10 +444,12 @@ public static class DbInitializer
             .ToListAsync();
     }
     
-    private static void InitializeDealer8ProgressionValues(
+    private static void InitializeProgressionValues(
         List<MasterTemplateCell> templateCells,
         Dictionary<string, decimal> baseValues,
-        Dictionary<string, decimal> increments)
+        Dictionary<string, decimal> increments,
+        decimal baseValue,
+        decimal increment)
     {
         foreach (var cell in templateCells)
         {
@@ -344,13 +459,13 @@ public static class DbInitializer
             // Set initial value
             if (cell.CellAddress.StartsWith("A"))
             {
-                baseValues[cell.CellAddress] = 100; // Start at 100
-                increments[cell.CellAddress] = 10;  // Increase by 10 each month
+                baseValues[cell.CellAddress] = baseValue;
+                increments[cell.CellAddress] = increment;
             }
             else if (cell.CellAddress.StartsWith("B"))
             {
-                baseValues[cell.CellAddress] = 300; // Start at 300
-                increments[cell.CellAddress] = 15;  // Increase by 15 each month
+                baseValues[cell.CellAddress] = baseValue * 1.5m; // B values are generally higher
+                increments[cell.CellAddress] = increment * 1.2m;
             }
         }
     }
@@ -382,11 +497,12 @@ public static class DbInitializer
     private static List<FinanceSubmissionCell> CreateSubmissionCells(
         List<MasterTemplateCell> templateCells,
         int submissionId,
-        int dealerIndex,
+        int groupId,
         int month,
         Random random,
-        Dictionary<string, decimal> dealer8CellBaseValues,
-        Dictionary<string, decimal> dealer8CellIncrements)
+        Dictionary<string, decimal> baseValues,
+        Dictionary<string, decimal> increments,
+        int year)
     {
         var submissionCells = new List<FinanceSubmissionCell>();
         
@@ -398,11 +514,12 @@ public static class DbInitializer
             
             decimal cellValue = CalculateCellValue(
                 templateCell.CellAddress, 
-                dealerIndex, 
+                groupId, 
                 month, 
                 random, 
-                dealer8CellBaseValues, 
-                dealer8CellIncrements);
+                baseValues, 
+                increments,
+                year);
             
             // Create submission cell
             var cell = new FinanceSubmissionCell
@@ -422,48 +539,54 @@ public static class DbInitializer
     
     private static decimal CalculateCellValue(
         string cellAddress,
-        int dealerIndex,
+        int groupId,
         int month,
         Random random,
-        Dictionary<string, decimal> dealer8CellBaseValues,
-        Dictionary<string, decimal> dealer8CellIncrements)
+        Dictionary<string, decimal> baseValues,
+        Dictionary<string, decimal> increments,
+        int year)
     {
-        // For dealer 8 (Highland Vehicles at index 7), use arithmetic progression
-        if (dealerIndex == 7)
-        {
-            // Calculate value based on month and base values
-            return dealer8CellBaseValues[cellAddress] + 
-                 (month - 1) * dealer8CellIncrements[cellAddress];
-        }
-        // Apply the specific ranges based on cell address and dealer
-        else if (cellAddress.StartsWith("A"))
-        {
-            // For dealer 9 (index 8), A cells should be in range 400-600
-            if (dealerIndex == 8)
-            {
-                return random.Next(400, 601);
-            }
-            // For all other dealers, A cells should be in range 100-200
-            else
-            {
-                return random.Next(100, 201);
-            }
-        }
-        else if (cellAddress.StartsWith("B"))
-        {
-            // For dealer 10 (index 9), B cells should be in range 10-90
-            if (dealerIndex == 9)
-            {
-                return random.Next(10, 91);
-            }
-            // For all other dealers, B cells should be in range 300-400
-            else
-            {
-                return random.Next(300, 401);
-            }
-        }
+        // Calculate the year factor (gradual growth over years)
+        decimal yearFactor = 1 + (year - 2020) * 0.05m;
         
-        // Default fallback
-        return 0;
+        // Use arithmetic progression for all dealers with group-specific characteristics
+        if (baseValues.ContainsKey(cellAddress))
+        {
+            // Calculate value based on month, base values and year
+            decimal value = baseValues[cellAddress] + 
+                (month - 1) * increments[cellAddress];
+            
+            // Adjust for yearly growth
+            value *= yearFactor;
+            
+            // Add some randomness (±5%)
+            decimal randomFactor = (decimal)(random.NextDouble() * 0.1) - 0.05m;
+            value *= (1 + randomFactor);
+            
+            return Math.Round(value, 2);
+        }
+        // Apply fallback ranges if the key isn't found
+        else
+        {
+            decimal baseVal;
+            
+            if (cellAddress.StartsWith("A"))
+            {
+                baseVal = groupId == 1 ? random.Next(180, 240) :
+                          groupId == 2 ? random.Next(140, 200) :
+                                         random.Next(90, 150);
+            }
+            else // B cells
+            {
+                baseVal = groupId == 1 ? random.Next(250, 350) :
+                          groupId == 2 ? random.Next(200, 300) :
+                                         random.Next(150, 250);
+            }
+            
+            // Adjust for yearly growth
+            baseVal *= yearFactor;
+            
+            return Math.Round(baseVal, 2);
+        }
     }
 } 

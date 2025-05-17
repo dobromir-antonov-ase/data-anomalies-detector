@@ -14,4 +14,10 @@ public class DataPattern
     public string? Formula { get; set; } // For mathematical relationships
     public decimal? R2Value { get; set; } // For regression patterns
     public List<string>? RelatedCellAddresses { get; set; } // Cells involved in the pattern
+    
+    // Navigation properties for enhanced features
+    public TimeRange? TimeRange { get; set; } // Time period over which pattern was detected
+    public IndustryComparison? IndustryComparison { get; set; } // Comparison with industry averages
+    public BusinessImpact? BusinessImpact { get; set; } // Business impact assessment
+    public List<int>? RelatedPatterns { get; set; } // IDs of related patterns
 } 

@@ -39,7 +39,7 @@ public class AnomalyDetectionService
         allAnomalies.AddRange(await DetectGlobalPatterns(recentSubmissions));
         
         // 2. Detect cross-dealer anomalies
-        allAnomalies.AddRange(await DetectCrossDealerAnomalies(recentSubmissions));
+        allAnomalies.AddRange(await DetectCrossDealerAnomalies(recentSubmissions, lastMonthsCount));
         
         // 3. Find temporal anomalies (trends over time)
         allAnomalies.AddRange(await DetectTemporalAnomalies(recentSubmissions));
@@ -167,12 +167,12 @@ public class AnomalyDetectionService
         return anomalies;
     }
     
-    private async Task<IEnumerable<DataAnomaly>> DetectCrossDealerAnomalies(List<FinanceSubmission> submissions)
+    private async Task<IEnumerable<DataAnomaly>> DetectCrossDealerAnomalies(List<FinanceSubmission> submissions, int lastMonthsCount)
     {
         var anomalies = new List<DataAnomaly>();
         
         // Get submissions from the last 3 months
-        var threeMonthsAgo = DateTime.UtcNow.AddMonths(-3);
+        var threeMonthsAgo = DateTime.UtcNow.AddMonths(lastMonthsCount * -1);
         var recentSubmissionsWithSameMonth = submissions
             .Where(s => s.SubmissionDate >= threeMonthsAgo)
             .GroupBy(s => new { s.Month, s.Year })
@@ -198,52 +198,93 @@ public class AnomalyDetectionService
             
         foreach (var address in commonAddresses)
         {
-            var valuesForAddress = new Dictionary<int, decimal>();
-            
-            // Collect values for this address from each dealer
-            foreach (var submission in submissionsByDealer.Values)
-            {
-                var cell = submission.Cells.FirstOrDefault(c => c.GlobalAddress == address);
-                if (cell != null)
-                {
-                    valuesForAddress[submission.DealerId] = cell.Value;
-                }
-            }
-            
-            if (valuesForAddress.Count < 3) continue;
-            
+            var cellValues = submissionsByDealer.Values
+                .Select(s => s.Cells.FirstOrDefault(c => c.GlobalAddress == address))
+                .Where(c => c != null)
+                .ToDictionary(c => submissionsByDealer.First(d => d.Value.Id == c!.FinanceSubmissionId).Key, c => c!.Value);
+                
+            if (cellValues.Count < 3)
+                continue;
+                
             // Calculate statistics
-            var values = valuesForAddress.Values.ToList();
+            var values = cellValues.Values.ToList();
             var avg = values.Average();
             var stdDev = Math.Sqrt(values.Select(v => Math.Pow((double)(v - avg), 2)).Average());
             
-            // Find outlier dealers
-            foreach (var dealerValue in valuesForAddress)
+            // Check for outliers (values more than 2 standard deviations from the mean)
+            foreach (var dealerCell in cellValues)
             {
-                var dealerId = dealerValue.Key;
-                var value = dealerValue.Value;
-                var dealer = await _dbContext.Dealers.FindAsync(dealerId);
+                var dealerId = dealerCell.Key;
+                var value = dealerCell.Value;
+                var zScore = Math.Abs((double)(value - avg) / stdDev);
                 
-                if (dealer == null) continue;
-                
-                // Check if this dealer's value is an outlier compared to other dealers
-                if (Math.Abs((double)(value - avg)) > stdDev * 2)
+                // If value is an outlier
+                if (zScore > 2)
                 {
-                    var deviation = Math.Round(((double)(value - avg) / (double)avg) * 100, 1);
-                    var direction = deviation > 0 ? "higher" : "lower";
+                    // Get dealer info for better context
+                    var dealer = await _dbContext.Dealers.FindAsync(dealerId);
+                    var dealerName = dealer?.Name ?? $"Dealer {dealerId}";
                     
+                    // Calculate anomaly score based on z-score (0-100 scale)
+                    var anomalyScore = Math.Min(100m, (decimal)(zScore * 25));
+                    
+                    // Determine severity based on z-score
+                    string severity = zScore > 3 ? "high" : zScore > 2.5 ? "medium" : "low";
+                    
+                    // Get metric name from cell address (simplified example)
+                    string metricName = GetMetricNameFromCellAddress(address);
+                    
+                    // Create enhanced anomaly object
                     anomalies.Add(new DataAnomaly
                     {
                         AnomalyType = "Cross-Dealer Outlier",
-                        Description = $"Dealer '{dealer.Name}' reported value for {address} is {Math.Abs(deviation)}% {direction} than average",
-                        Severity = Math.Abs(deviation) > 50 ? "high" : "medium",
-                        DetectedAt = DateTime.UtcNow
+                        Description = $"Value for {address} from {dealerName} significantly deviates from other dealers",
+                        Severity = severity,
+                        DetectedAt = DateTime.UtcNow,
+                        AnomalyScore = anomalyScore,
+                        AffectedEntity = dealerName,
+                        AffectedMetric = metricName,
+                        ActualValue = value,
+                        ExpectedValue = avg,
+                        Threshold = (decimal)(avg + (2 * (decimal)stdDev)),
+                        RelatedCellAddresses = new List<string> { address },
+                        BusinessImpact = new BusinessImpact 
+                        { 
+                            Description = $"Potential misreporting or performance issue affecting {metricName}",
+                            EstimatedValue = Math.Abs(value - avg) * 1000 // Simplified business impact calculation
+                        },
+                        RecommendedAction = severity == "high" 
+                            ? $"Immediately verify {address} value with {dealerName} and investigate cause"
+                            : $"Review {address} data entry processes at {dealerName}",
+                        TimeRange = new TimeRange
+                        {
+                            Start = threeMonthsAgo,
+                            End = DateTime.UtcNow
+                        }
                     });
                 }
             }
         }
         
         return anomalies;
+    }
+    
+    // Helper method to get a user-friendly metric name from a cell address
+    private string GetMetricNameFromCellAddress(string address)
+    {
+        // This is a simplified example - in a real app, you'd map cell addresses to actual metric names
+        var metricMap = new Dictionary<string, string>
+        {
+            { "A1", "Monthly Revenue" },
+            { "A2", "Quarterly Revenue" },
+            { "B1", "Monthly Expenses" },
+            { "B2", "Quarterly Expenses" },
+            { "C1", "Profit Margin" },
+            { "D1", "Vehicle Sales Count" },
+            { "E1", "Marketing Spend" }
+        };
+        
+        return metricMap.ContainsKey(address) ? metricMap[address] : $"Metric at {address}";
     }
     
     private async Task<IEnumerable<DataAnomaly>> DetectTemporalAnomalies(List<FinanceSubmission> submissions)
@@ -667,284 +708,6 @@ public class AnomalyDetectionService
         return true;
     }
 
-    // Added method to detect data patterns in a submission
-    public async Task<IEnumerable<DataPattern>> DetectDataPatterns(int submissionId)
-    {
-        var patterns = new List<DataPattern>();
-        
-        // Get the finance submission including all related data
-        var submission = await _dbContext.FinanceSubmissions
-            .Include(fs => fs.MasterTemplate)
-            .Include(fs => fs.Cells)
-            .Include(fs => fs.Dealer)
-            .FirstOrDefaultAsync(fs => fs.Id == submissionId);
-            
-        if (submission == null)
-        {
-            return patterns;
-        }
-        
-        // Get historical submissions for this dealer
-        var historicalSubmissions = await _dbContext.FinanceSubmissions
-            .Where(fs => fs.DealerId == submission.DealerId && fs.Id != submissionId)
-            .Include(fs => fs.Cells)
-            .OrderByDescending(fs => fs.SubmissionDate)
-            .ToListAsync();
-            
-        // Perform correlation analysis between cells
-        patterns.AddRange(DetectCellCorrelations(submission, historicalSubmissions));
-        
-        // Detect mathematical relationships
-        patterns.AddRange(DetectMathematicalRelationships(submission));
-        
-        // Detect seasonal patterns
-        patterns.AddRange(await DetectSeasonalPatterns(submission, historicalSubmissions));
-        
-        return patterns;
-    }
-    
-    // PATTERN DETECTION METHODS
-    
-    private List<DataPattern> DetectCellCorrelations(FinanceSubmission submission, List<FinanceSubmission> historicalSubmissions)
-    {
-        var patterns = new List<DataPattern>();
-        
-        // We need at least the current submission + 5 historical submissions for meaningful correlations
-        if (historicalSubmissions.Count < 5)
-        {
-            return patterns;
-        }
-        
-        // Get common cell addresses across submissions
-        var currentCellAddresses = submission.Cells.Select(c => c.GlobalAddress).ToList();
-        var cellsToAnalyze = currentCellAddresses.Where(address => 
-            historicalSubmissions.All(s => s.Cells.Any(c => c.GlobalAddress == address))).ToList();
-            
-        // If we don't have enough common cells, can't perform correlation
-        if (cellsToAnalyze.Count < 2)
-        {
-            return patterns;
-        }
-        
-        // Create combinations of cell pairs to check correlations
-        for (int i = 0; i < cellsToAnalyze.Count; i++)
-        {
-            for (int j = i + 1; j < cellsToAnalyze.Count; j++)
-            {
-                var cell1Address = cellsToAnalyze[i];
-                var cell2Address = cellsToAnalyze[j];
-                
-                // Get value series for both cells from historical submissions + current submission
-                var cell1Values = new List<decimal>();
-                var cell2Values = new List<decimal>();
-                
-                // Add current submission values
-                cell1Values.Add(submission.Cells.First(c => c.GlobalAddress == cell1Address).Value);
-                cell2Values.Add(submission.Cells.First(c => c.GlobalAddress == cell2Address).Value);
-                
-                // Add historical values
-                foreach (var historicalSubmission in historicalSubmissions)
-                {
-                    var cell1 = historicalSubmission.Cells.FirstOrDefault(c => c.GlobalAddress == cell1Address);
-                    var cell2 = historicalSubmission.Cells.FirstOrDefault(c => c.GlobalAddress == cell2Address);
-                    
-                    if (cell1 != null && cell2 != null)
-                    {
-                        cell1Values.Add(cell1.Value);
-                        cell2Values.Add(cell2.Value);
-                    }
-                }
-                
-                // Calculate correlation coefficient
-                var correlation = CalculateCorrelation(cell1Values, cell2Values);
-                
-                // If strong correlation (positive or negative), add as a pattern
-                if (Math.Abs(correlation) > 0.7m)
-                {
-                    var correlationType = correlation > 0 ? "positive" : "negative";
-                    var absCorrelation = Math.Abs(correlation);
-                    
-                    patterns.Add(new DataPattern
-                    {
-                        PatternType = "Cell Correlation",
-                        Description = $"Strong {correlationType} correlation (r = {correlation:F2}) between {cell1Address} and {cell2Address}",
-                        Significance = absCorrelation > 0.9m ? "high" : "medium",
-                        ConfidenceScore = absCorrelation * 100,
-                        Correlation = correlation,
-                        RelatedCellAddresses = new List<string> { cell1Address, cell2Address },
-                        DetectedAt = DateTime.UtcNow
-                    });
-                }
-            }
-        }
-        
-        return patterns;
-    }
-    
-    private List<DataPattern> DetectMathematicalRelationships(FinanceSubmission submission)
-    {
-        var patterns = new List<DataPattern>();
-        
-        // Group cells by their sheet to analyze relationships within sheets
-        var cellsBySheet = submission.Cells
-            .GroupBy(c => c.GlobalAddress.Split('!')[0])
-            .ToDictionary(g => g.Key, g => g.ToList());
-            
-        foreach (var sheetCells in cellsBySheet.Values)
-        {
-            // Need at least 3 cells for basic relationships
-            if (sheetCells.Count < 3)
-                continue;
-                
-            // Look for sum relationships (A + B = C)
-            for (int i = 0; i < sheetCells.Count; i++)
-            {
-                for (int j = i + 1; j < sheetCells.Count; j++)
-                {
-                    for (int k = 0; k < sheetCells.Count; k++)
-                    {
-                        if (k == i || k == j) continue;
-                        
-                        var cellA = sheetCells[i];
-                        var cellB = sheetCells[j];
-                        var cellC = sheetCells[k];
-                        
-                        // Check if A + B = C (with small margin for rounding errors)
-                        if (Math.Abs(cellA.Value + cellB.Value - cellC.Value) < 0.01m)
-                        {
-                            patterns.Add(new DataPattern
-                            {
-                                PatternType = "Sum Relationship",
-                                Description = $"{cellA.GlobalAddress} + {cellB.GlobalAddress} = {cellC.GlobalAddress}",
-                                Formula = $"{cellA.GlobalAddress} + {cellB.GlobalAddress} = {cellC.GlobalAddress}",
-                                Significance = "high",
-                                ConfidenceScore = 95,
-                                RelatedCellAddresses = new List<string> { cellA.GlobalAddress, cellB.GlobalAddress, cellC.GlobalAddress },
-                                DetectedAt = DateTime.UtcNow
-                            });
-                        }
-                        
-                        // Check if A - B = C
-                        if (Math.Abs(cellA.Value - cellB.Value - cellC.Value) < 0.01m)
-                        {
-                            patterns.Add(new DataPattern
-                            {
-                                PatternType = "Difference Relationship",
-                                Description = $"{cellA.GlobalAddress} - {cellB.GlobalAddress} = {cellC.GlobalAddress}",
-                                Formula = $"{cellA.GlobalAddress} - {cellB.GlobalAddress} = {cellC.GlobalAddress}",
-                                Significance = "high",
-                                ConfidenceScore = 95,
-                                RelatedCellAddresses = new List<string> { cellA.GlobalAddress, cellB.GlobalAddress, cellC.GlobalAddress },
-                                DetectedAt = DateTime.UtcNow
-                            });
-                        }
-                    }
-                }
-            }
-        }
-        
-        return patterns;
-    }
-    
-    private async Task<List<DataPattern>> DetectSeasonalPatterns(FinanceSubmission currentSubmission, List<FinanceSubmission> historicalSubmissions)
-    {
-        var patterns = new List<DataPattern>();
-        
-        // Need at least 12 months of data to detect seasonal patterns
-        if (historicalSubmissions.Count < 11) // 11 historical + 1 current = 12 months
-            return patterns;
-            
-        // Get all dealer submissions ordered by month/year
-        var allSubmissions = new List<FinanceSubmission>(historicalSubmissions);
-        allSubmissions.Add(currentSubmission);
-        
-        // Order by year and month
-        var orderedSubmissions = allSubmissions
-            .OrderBy(s => s.Year)
-            .ThenBy(s => s.Month)
-            .ToList();
-            
-        // Check for common cell addresses
-        var commonAddresses = currentSubmission.Cells
-            .Select(c => c.GlobalAddress)
-            .Where(address => historicalSubmissions.All(s => s.Cells.Any(c => c.GlobalAddress == address)))
-            .ToList();
-            
-        foreach (var address in commonAddresses)
-        {
-            // Get monthly values for this cell
-            var monthlyValues = new decimal[12];
-            Array.Fill(monthlyValues, 0m);
-            
-            var valueCount = new int[12];
-            Array.Fill(valueCount, 0);
-            
-            // Accumulate values by month
-            foreach (var submission in orderedSubmissions)
-            {
-                var cell = submission.Cells.FirstOrDefault(c => c.GlobalAddress == address);
-                if (cell != null)
-                {
-                    var monthIndex = submission.Month - 1; // 0-based index for array
-                    monthlyValues[monthIndex] += cell.Value;
-                    valueCount[monthIndex]++;
-                }
-            }
-            
-            // Calculate average for each month (where we have data)
-            for (int i = 0; i < 12; i++)
-            {
-                if (valueCount[i] > 0)
-                {
-                    monthlyValues[i] /= valueCount[i];
-                }
-            }
-            
-            // Find the highest and lowest months
-            int highestMonth = 0;
-            int lowestMonth = 0;
-            decimal highestValue = decimal.MinValue;
-            decimal lowestValue = decimal.MaxValue;
-            
-            for (int i = 0; i < 12; i++)
-            {
-                if (valueCount[i] > 0) // Only consider months with data
-                {
-                    if (monthlyValues[i] > highestValue)
-                    {
-                        highestValue = monthlyValues[i];
-                        highestMonth = i;
-                    }
-                    if (monthlyValues[i] < lowestValue)
-                    {
-                        lowestValue = monthlyValues[i];
-                        lowestMonth = i;
-                    }
-                }
-            }
-            
-            // If there is a significant difference between highest and lowest months (>= 20%)
-            if (lowestValue > 0 && ((highestValue - lowestValue) / lowestValue) >= 0.2m)
-            {
-                var highMonthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(highestMonth + 1);
-                var lowMonthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(lowestMonth + 1);
-                var percentDiff = Math.Round(((highestValue - lowestValue) / lowestValue) * 100, 1);
-                
-                patterns.Add(new DataPattern
-                {
-                    PatternType = "Seasonal Pattern",
-                    Description = $"Cell {address} shows seasonal pattern with highest values in {highMonthName} and lowest in {lowMonthName} ({percentDiff}% difference)",
-                    Significance = percentDiff > 50 ? "high" : "medium",
-                    ConfidenceScore = Math.Min(95, 60 + (percentDiff / 2)),
-                    RelatedCellAddresses = new List<string> { address },
-                    DetectedAt = DateTime.UtcNow
-                });
-            }
-        }
-        
-        return patterns;
-    }
-    
     // Helper method to calculate correlation coefficient
     private decimal CalculateCorrelation(List<decimal> xValues, List<decimal> yValues)
     {

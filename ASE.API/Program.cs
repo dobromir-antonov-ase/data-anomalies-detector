@@ -77,6 +77,7 @@ app.MapGetAllSubmissionsEndpoint();
 app.MapGetSubmissionsByDealerEndpoint();
 app.MapGetSubmissionByIdEndpoint();
 app.MapCreateSubmissionEndpoint();
+app.MapGetPaginatedSubmissionsEndpoint();
 
 // Map MasterTemplate endpoints from individual use case files
 app.MapGetAllMasterTemplatesEndpoint();
@@ -85,10 +86,7 @@ app.MapGetMasterTemplatesByYearEndpoint();
 app.MapCreateMasterTemplateEndpoint();
 
 // Map Anomaly Detection endpoints
-app.MapGetAnomaliesBySubmissionEndpoint();
-app.MapDetectGlobalAnomaliesEndpoint();
-app.MapDetectAnomaliesByDealerEndpoint();
-app.MapDetectDataPatternsEndpoint();
-app.MapDetectMLAnomaliesEndpoint();
+app.MapDealerPatternsEndpoints();
+app.MapDealerGroupPatternsEndpoints();
 
 app.Run();

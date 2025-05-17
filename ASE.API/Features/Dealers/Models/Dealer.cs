@@ -9,6 +9,8 @@ public class Dealer
     public string Address { get; set; } = string.Empty;
     public string ContactPhone { get; set; } = string.Empty;
     public string ContactEmail { get; set; } = string.Empty;
+    public int GroupId { get; set; }
+    public string GroupName { get; set; } = string.Empty;
     
     // Navigation property
     public ICollection<FinanceSubmission> Submissions { get; set; } = new List<FinanceSubmission>();

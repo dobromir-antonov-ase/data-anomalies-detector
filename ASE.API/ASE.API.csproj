@@ -13,4 +13,8 @@
     <PackageReference Include="Microsoft.ML.TimeSeries" Version="3.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\AnomalyDetection\ML\" />
+  </ItemGroup>
+
 </Project>

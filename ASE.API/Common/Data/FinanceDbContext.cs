@@ -19,6 +19,10 @@ public class FinanceDbContext : DbContext
     public DbSet<MasterTemplateTable> MasterTemplateTables => Set<MasterTemplateTable>();
     public DbSet<MasterTemplateCell> MasterTemplateCells => Set<MasterTemplateCell>();
     public DbSet<DataAnomaly> DataAnomalies => Set<DataAnomaly>();
+    public DbSet<DataPattern> DataPatterns => Set<DataPattern>();
+    public DbSet<BusinessImpact> BusinessImpacts => Set<BusinessImpact>();
+    public DbSet<TimeRange> TimeRanges => Set<TimeRange>();
+    public DbSet<IndustryComparison> IndustryComparisons => Set<IndustryComparison>();
     public DbSet<FinanceSubmissionCell> SubmissionData => Set<FinanceSubmissionCell>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -52,5 +56,37 @@ public class FinanceDbContext : DbContext
             .HasOne(sd => sd.FinanceSubmission)
             .WithMany(fs => fs.Cells)
             .HasForeignKey(sd => sd.FinanceSubmissionId);
+            
+        // Configure BusinessImpact relationships
+        modelBuilder.Entity<BusinessImpact>()
+            .HasOne(bi => bi.DataAnomaly)
+            .WithOne(da => da.BusinessImpact)
+            .HasForeignKey<BusinessImpact>(bi => bi.DataAnomalyId)
+            .IsRequired(false);
+            
+        modelBuilder.Entity<BusinessImpact>()
+            .HasOne(bi => bi.DataPattern)
+            .WithOne(dp => dp.BusinessImpact)
+            .HasForeignKey<BusinessImpact>(bi => bi.DataPatternId)
+            .IsRequired(false);
+            
+        // Configure TimeRange relationships
+        modelBuilder.Entity<TimeRange>()
+            .HasOne(tr => tr.DataAnomaly)
+            .WithOne(da => da.TimeRange)
+            .HasForeignKey<TimeRange>(tr => tr.DataAnomalyId)
+            .IsRequired(false);
+            
+        modelBuilder.Entity<TimeRange>()
+            .HasOne(tr => tr.DataPattern)
+            .WithOne(dp => dp.TimeRange)
+            .HasForeignKey<TimeRange>(tr => tr.DataPatternId)
+            .IsRequired(false);
+            
+        // Configure IndustryComparison relationship
+        modelBuilder.Entity<IndustryComparison>()
+            .HasOne(ic => ic.DataPattern)
+            .WithOne(dp => dp.IndustryComparison)
+            .HasForeignKey<IndustryComparison>(ic => ic.DataPatternId);
     }
 } 
