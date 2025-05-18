@@ -7,8 +7,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'ASE.API/**'
   workflow_dispatch:
 
 jobs:
@@ -26,24 +24,16 @@ jobs:
           dotnet-version: '9.x'
 
       - name: Build with dotnet
-        working-directory: ./ASE.API
         run: dotnet build --configuration Release
 
       - name: dotnet publish
-        working-directory: ./ASE.API
         run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
-      
-      # Create a zip file of the published output
-      - name: Zip the published output
-        run: |
-          Compress-Archive -Path "${{env.DOTNET_ROOT}}/myapp/*" -DestinationPath "${{env.DOTNET_ROOT}}/myapp.zip"
-        shell: pwsh
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp.zip
+          path: ${{env.DOTNET_ROOT}}/myapp
 
   deploy:
     runs-on: windows-latest
@@ -64,7 +54,5 @@ jobs:
         with:
           app-name: 'data-anomaly-api'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_84FC86F92F1449178A8F9E2295F21BF1 }}
-          package: myapp.zip
-          respect-pom-xml: false
-          deployment-method: zipDeploy
+          package: .
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_3C2B8A0D68DA4C4A83899D2423113910 }}
