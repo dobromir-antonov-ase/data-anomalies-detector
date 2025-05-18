@@ -7,6 +7,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'ASE.API/**'
   workflow_dispatch:
 
 jobs:
@@ -24,9 +26,11 @@ jobs:
           dotnet-version: '9.x'
 
       - name: Build with dotnet
+        working-directory: ./ASE.API
         run: dotnet build --configuration Release
 
       - name: dotnet publish
+        working-directory: ./ASE.API
         run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
       - name: Upload artifact for deployment job
