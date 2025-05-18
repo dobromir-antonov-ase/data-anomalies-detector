@@ -1,0 +1,96 @@
+.query-builder-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  
+  .card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    
+    .card-header {
+      background-color: #f8f9fa;
+      border-bottom: 1px solid #e9ecef;
+      padding: 20px;
+      
+      h2 {
+        margin-bottom: 0.5rem;
+        color: #343a40;
+      }
+      
+      .subtitle {
+        color: #6c757d;
+        margin-bottom: 0;
+      }
+    }
+    
+    .card-body {
+      padding: 20px;
+      
+      .form-row {
+        margin-bottom: 15px;
+      }
+      
+      textarea.form-control {
+        resize: vertical;
+        min-height: 80px;
+      }
+      
+      .input-group-append {
+        button {
+          height: 100%;
+        }
+      }
+    }
+  }
+  
+  .results-container {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 15px;
+    
+    h3 {
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      color: #343a40;
+    }
+    
+    .code-block {
+      position: relative;
+      background-color: #212529;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      
+      pre {
+        padding: 15px;
+        margin: 0;
+        color: #e9ecef;
+        max-height: 300px;
+        overflow-y: auto;
+        
+        code {
+          font-family: 'Courier New', Courier, monospace;
+          white-space: pre-wrap;
+        }
+      }
+      
+      .copy-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+        
+        &:hover {
+          opacity: 1;
+        }
+      }
+    }
+    
+    table {
+      th {
+        background-color: #343a40;
+        color: white;
+      }
+    }
+  }
+} 

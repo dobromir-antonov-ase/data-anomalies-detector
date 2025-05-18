@@ -1,0 +1,164 @@
+<div class="anomalies-container">
+  <div class="anomalies-header">
+    <h2>Financial Data Anomalies Analysis</h2>
+    
+    <div class="filter-container">
+      <mat-form-field>
+        <mat-label>View Anomalies By</mat-label>
+        <mat-select [(ngModel)]="viewMode" (selectionChange)="onViewModeChange()">
+          <mat-option value="dealer">Individual Dealer</mat-option>
+          <mat-option value="group">Dealer Group</mat-option>
+        </mat-select>
+      </mat-form-field>
+      
+      <mat-form-field *ngIf="viewMode === 'dealer'">
+        <mat-label>Select Dealer</mat-label>
+        <mat-select [(ngModel)]="selectedDealerId" (selectionChange)="loadDealerAnomalies()">
+          <mat-option *ngFor="let dealer of dealers()" [value]="dealer.id">
+            {{ dealer.name }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+      
+      <mat-form-field *ngIf="viewMode === 'group'">
+        <mat-label>Select Dealer Group</mat-label>
+        <mat-select [(ngModel)]="selectedGroupId" (selectionChange)="loadGroupAnomalies()">
+          <mat-option *ngFor="let group of dealerGroups()" [value]="group.groupId">
+            {{ group.groupName }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+  
+  <div class="loading-indicator" *ngIf="loading()">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading anomalies...</p>
+  </div>
+  
+  <div class="anomalies-content" *ngIf="!loading()">
+    <!-- No anomalies message -->
+    <div class="no-anomalies" *ngIf="anomalies().length === 0">
+      <mat-icon>search</mat-icon>
+      <h3>No anomalies detected</h3>
+      <p>There are no anomalies detected for the selected entity.</p>
+      <button mat-raised-button color="primary" (click)="reloadAnomalies()">
+        Analyze Data
+      </button>
+    </div>
+    
+    <!-- Anomalies visualization -->
+    <div *ngIf="anomalies().length > 0">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>
+            {{ viewMode === 'dealer' ? 'Dealer Anomaly Analysis' : 'Dealer Group Anomaly Analysis' }}
+          </mat-card-title>
+          <mat-card-subtitle>
+            {{ currentEntityName() }}
+          </mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-tab-group>
+            <mat-tab label="Distribution Chart">
+              <app-anomaly-visualization 
+                [anomalies]="anomalies()" 
+                chartType="pie">
+              </app-anomaly-visualization>
+            </mat-tab>
+            <mat-tab label="Timeline View">
+              <app-anomaly-visualization 
+                [anomalies]="anomalies()" 
+                chartType="timeline">
+              </app-anomaly-visualization>
+            </mat-tab>
+            <mat-tab label="Type Distribution">
+              <app-anomaly-visualization 
+                [anomalies]="anomalies()" 
+                chartType="scatter">
+              </app-anomaly-visualization>
+            </mat-tab>
+            <mat-tab label="Metric Comparison">
+              <app-anomaly-visualization 
+                [anomalies]="anomalies()" 
+                chartType="radar">
+              </app-anomaly-visualization>
+            </mat-tab>
+            <mat-tab label="Value Analysis">
+              <app-anomaly-visualization 
+                [anomalies]="anomalies()" 
+                chartType="bubble">
+              </app-anomaly-visualization>
+            </mat-tab>
+            <mat-tab label="Data Table">
+              <table class="anomaly-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Severity</th>
+                    <th>Detected At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let anomaly of anomalies()" [class]="'severity-' + anomaly.severity.toLowerCase()">
+                    <td>{{ anomaly.anomalyType }}</td>
+                    <td>{{ anomaly.description }}</td>
+                    <td>{{ anomaly.severity }}</td>
+                    <td>{{ anomaly.detectedAt | date:'medium' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </mat-tab>
+          </mat-tab-group>
+        </mat-card-content>
+      </mat-card>
+      
+      <!-- Anomaly insights and recommendations -->
+      <mat-card class="insights-card">
+        <mat-card-header>
+          <mat-card-title>Anomaly Insights & Recommendations</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="insight-item" *ngFor="let anomaly of getTopAnomalies()">
+            <h4>{{ anomaly.anomalyType }}</h4>
+            <p>{{ anomaly.description }}</p>
+            <div class="insight-details">
+              <div class="insight-metric">
+                <span class="metric-label">Severity:</span>
+                <span [class]="'severity-badge severity-' + anomaly.severity.toLowerCase()">{{ anomaly.severity }}</span>
+              </div>
+              <div class="insight-metric">
+                <span class="metric-label">Detected:</span>
+                <span class="metric-value">{{ anomaly.detectedAt | date:'medium' }}</span>
+              </div>
+              <div class="insight-metric" *ngIf="anomaly.anomalyScore">
+                <span class="metric-label">Score:</span>
+                <span class="metric-value">{{ anomaly.anomalyScore.toFixed(1) }}</span>
+              </div>
+              <div class="insight-metric" *ngIf="anomaly.affectedMetric">
+                <span class="metric-label">Metric:</span>
+                <span class="metric-value">{{ anomaly.affectedMetric }}</span>
+              </div>
+            </div>
+            
+            <div class="business-impact" *ngIf="anomaly.businessImpact">
+              <h5>Business Impact:</h5>
+              <p>{{ anomaly.businessImpact.description }}</p>
+              <ng-container *ngIf="anomaly.businessImpact.estimatedValue">
+                <p class="impact-value">
+                  Estimated Value: ${{ anomaly.businessImpact.estimatedValue.toLocaleString() }}
+                </p>
+              </ng-container>
+            </div>
+            
+            <div class="recommendation">
+              <h5>Recommended Action:</h5>
+              <p>{{ getRecommendation(anomaly) }}</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div> 

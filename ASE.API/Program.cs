@@ -4,6 +4,8 @@ using ASE.API.Features.AnomalyDetection.Services;
 using ASE.API.Features.Dealers;
 using ASE.API.Features.FinanceSubmissions;
 using ASE.API.Features.MasterTemplates;
+using ASE.API.Features.QueryBuilder;
+using ASE.API.Features.QueryBuilder.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,13 +16,12 @@ builder.Services.AddEndpointsApiExplorer();
 // Add CORS services
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowUIOrigin",
+    options.AddPolicy("AllowAllOrigins",
         policy =>
         {
-            policy.WithOrigins("http://localhost:4200")
+            policy.AllowAnyOrigin()
                   .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
+                  .AllowAnyMethod();
         });
 });
 
@@ -31,6 +32,11 @@ builder.Services.AddDbContext<FinanceDbContext>(options =>
 // Register services
 builder.Services.AddScoped<AnomalyDetectionService>();
 builder.Services.AddScoped<DataPatternMLService>();
+
+// Register QueryBuilder services
+builder.Services.AddScoped<QueryBuilderService>();
+builder.Services.AddScoped<SpeechToTextService>();
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
@@ -43,7 +49,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // Use CORS before other middleware
-app.UseCors("AllowUIOrigin");
+app.UseCors("AllowAllOrigins");
 
 app.UseHttpsRedirection();
 
@@ -88,5 +94,8 @@ app.MapCreateMasterTemplateEndpoint();
 // Map Anomaly Detection endpoints
 app.MapDealerPatternsEndpoints();
 app.MapDealerGroupPatternsEndpoints();
+
+// Map QueryBuilder endpoints
+app.MapQueryBuilderEndpoints();
 
 app.Run();

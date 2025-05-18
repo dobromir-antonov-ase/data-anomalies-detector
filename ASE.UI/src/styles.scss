@@ -1,0 +1,62 @@
+@use '@angular/material' as mat;
+
+// Base theme configuration for the entire application
+html {
+  color-scheme: light;
+}
+
+// Theme variants - Azure is the default
+.azure-theme {
+  @include mat.theme((
+    color: mat.$azure-palette,
+    typography: Roboto,
+    density: 0
+  ));
+}
+
+.cyan-theme {
+  @include mat.theme((
+    color: mat.$cyan-palette,
+    typography: Roboto,
+    density: 0
+  ));
+}
+
+// Dark mode overrides
+.dark-mode {
+  color-scheme: dark;
+}
+
+.azure-theme.dark-mode {
+  @include mat.theme((
+    color: (
+      primary: mat.$azure-palette,
+      theme-type: dark
+    )
+  ));
+}
+
+.cyan-theme.dark-mode {
+  @include mat.theme((
+    color: (
+      primary: mat.$cyan-palette,
+      theme-type: dark
+    )
+  ));
+}
+
+// Global styles
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+.container {
+  padding: 0 20px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}

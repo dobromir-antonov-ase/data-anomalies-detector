@@ -1,0 +1,92 @@
+<div class="query-builder-container">
+  <div class="card">
+    <div class="card-header">
+      <h2>AI Query Builder</h2>
+      <p class="subtitle">Ask questions in natural language to generate database queries</p>
+    </div>
+    
+    <div class="card-body">
+      <div class="form-row">
+        <div class="input-group">
+          <textarea 
+            class="form-control" 
+            rows="3" 
+            placeholder="Describe what data you want to query... e.g., 'Show me total sales by dealer for the last quarter'"
+            [(ngModel)]="queryText"
+            [disabled]="isLoading"
+          ></textarea>
+          <div class="input-group-append">
+            <button 
+              class="btn btn-primary" 
+              (click)="generateQuery()" 
+              [disabled]="isLoading || !queryText">
+              Generate Query
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-row mt-2">
+        <div class="d-flex align-items-center">
+          <label class="mr-2">Query Type:</label>
+          <select class="form-control mr-3" [(ngModel)]="selectedQueryType">
+            <option *ngFor="let type of queryTypes" [value]="type">{{type | uppercase}}</option>
+          </select>
+          
+          <button 
+            class="btn" 
+            [class.btn-danger]="isRecording" 
+            [class.btn-secondary]="!isRecording"
+            (click)="isRecording ? stopRecording() : startRecording()">
+            <i class="bi" [class.bi-mic-fill]="isRecording" [class.bi-mic]="!isRecording"></i>
+            {{isRecording ? 'Stop Recording' : 'Speak Query'}}
+          </button>
+        </div>
+      </div>
+      
+      <!-- Error message display -->
+      <div class="alert alert-danger mt-3" *ngIf="errorMessage">
+        {{errorMessage}}
+      </div>
+      
+      <!-- Loading indicator -->
+      <div class="text-center mt-3" *ngIf="isLoading">
+        <div class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+        <p class="mt-2">Processing your request...</p>
+      </div>
+      
+      <!-- Results section -->
+      <div class="results-container mt-4" *ngIf="generatedQuery">
+        <h3>Generated Query</h3>
+        <div class="code-block">
+          <pre><code>{{generatedQuery}}</code></pre>
+          <button class="btn btn-sm btn-outline-secondary copy-btn" 
+            (click)="$event.stopPropagation(); copyToClipboard(generatedQuery)">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+        </div>
+        
+        <!-- Query results preview -->
+        <div class="mt-4" *ngIf="queryResult && queryResult.length > 0">
+          <h3>Preview Results</h3>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th *ngFor="let header of getHeaders()">{{header}}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of queryResult">
+                  <td *ngFor="let header of getHeaders()">{{row[header]}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 
