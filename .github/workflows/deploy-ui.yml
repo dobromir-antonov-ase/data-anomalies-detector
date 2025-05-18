@@ -33,9 +33,6 @@ jobs:
         working-directory: ./ASE.UI
         run: npm run build:github-pages
 
-      - name: Create 404.html for SPA routing
-        run: cp ./ASE.UI/dist/ase-client/index.html ./ASE.UI/dist/ase-client/404.html
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
