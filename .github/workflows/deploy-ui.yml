@@ -39,7 +39,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './ASE.UI/dist/ase-client'
+          path: './ASE.UI/dist'
 
   deploy:
     environment:
