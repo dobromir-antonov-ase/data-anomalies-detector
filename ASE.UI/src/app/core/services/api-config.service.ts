@@ -8,10 +8,10 @@ export class ApiConfigService {
   private _baseUrl: string;
   
   constructor() {
-    // For GitHub Pages deployment, API might be hosted elsewhere
+    // For GitHub Pages deployment, API is hosted on Azure App Service
     if (window.location.href.includes('github.io')) {
-      // Replace with your production/deployed API URL
-      this._baseUrl = 'https://your-deployed-api-url.com/api';
+      // Azure App Service URL
+      this._baseUrl = 'https://data-anomaly-api-befrcvgeesfnbge8.westeurope-01.azurewebsites.net/api';
     } else {
       // Development environment
       this._baseUrl = 'http://localhost:5034/api';

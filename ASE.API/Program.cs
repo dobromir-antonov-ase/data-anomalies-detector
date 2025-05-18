@@ -16,10 +16,11 @@ builder.Services.AddEndpointsApiExplorer();
 // Add CORS services
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAllOrigins",
+    options.AddPolicy("AllowAll",
         policy =>
         {
-            policy.AllowAnyOrigin()
+            policy.WithOrigins("https://github.io", "https://dobromir-antonov-ase.github.io", "http://localhost:4200")
+                  .SetIsOriginAllowedToAllowWildcardSubdomains()
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
@@ -49,7 +50,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // Use CORS before other middleware
-app.UseCors("AllowAllOrigins");
+app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
 
