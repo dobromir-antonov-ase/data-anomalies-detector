@@ -26,138 +26,63 @@ public class SpeechToTextService
         {
             // Read API configuration
             string apiKey = _configuration["SpeechToText:ApiKey"] ?? "mock-key";
-            string endpoint = _configuration["SpeechToText:Endpoint"] ?? "https://api.anthropic.com/v1/messages";
+            string endpoint = _configuration["SpeechToText:Endpoint"] ?? "https://api.openai.com/v1/audio/transcriptions";
             
             // Mock implementation for development
-            if (apiKey == "mock-key")
+            if (apiKey == "mock-key" || string.IsNullOrEmpty(apiKey))
             {
                 return "Show me total sales for all dealers in the last quarter";
             }
             
-            // First, convert the audio to base64
-            string base64Audio = await ConvertStreamToBase64(audioStream);
+            // Create multipart form content for the API request
+            using var formContent = new MultipartFormDataContent();
             
-            // Create the messages request with audio content
-            var requestData = new
-            {
-                model = "claude-3-opus-20240229",
-                max_tokens = 1000,
-                messages = new[]
-                {
-                    new {
-                        role = "user",
-                        content = new []
-                        {
-                            new {
-                                type = "image",
-                                source = new {
-                                    type = "base64",
-                                    media_type = $"audio/{audioFormat}",
-                                    data = base64Audio
-                                }
-                            },
-                            new {
-                                type = "text",
-                                text = "Please transcribe this audio recording accurately. It contains a database query request."
-                            }
-                        }
-                    }
-                },
-                system = "You are an audio transcription expert. Your task is to accurately transcribe the spoken content in the audio file."
-            };
+            // Add the audio file
+            // Copy the stream content first to ensure it can be read
+            var memoryStream = new MemoryStream();
+            await audioStream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
             
-            var content = new StringContent(
-                JsonSerializer.Serialize(requestData),
-                Encoding.UTF8,
-                "application/json");
-                
-            // Add Anthropic API key to headers
+            var streamContent = new StreamContent(memoryStream);
+            formContent.Add(streamContent, "file", $"audio.{audioFormat}");
+            
+            // Add other parameters - use whisper-1 model (OpenAI's recommended model for transcription)
+            formContent.Add(new StringContent("whisper-1"), "model");
+            formContent.Add(new StringContent("en"), "language"); // Default to English
+            
+            // Add API key to headers
             _httpClient.DefaultRequestHeaders.Clear();
-            _httpClient.DefaultRequestHeaders.Add("x-api-key", apiKey);
-            _httpClient.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
             
             // Send the request
-            var response = await _httpClient.PostAsync(endpoint, content);
+            var response = await _httpClient.PostAsync(endpoint, formContent);
             
             // Handle the response
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError($"Anthropic API returned {response.StatusCode}");
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError($"Speech-to-text API returned {response.StatusCode}: {errorContent}");
                 return string.Empty;
             }
             
             var responseBody = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation($"Whisper API response: {responseBody}");
             
-            // Parse the Anthropic response to extract the transcription
-            return ExtractTranscriptionFromAnthropicResponse(responseBody);
+            // Parse the JSON response
+            var jsonResponse = JsonSerializer.Deserialize<JsonElement>(responseBody);
+            
+            // OpenAI Whisper API returns a JSON with a "text" field containing the transcription
+            if (jsonResponse.TryGetProperty("text", out var textElement))
+            {
+                return textElement.GetString() ?? string.Empty;
+            }
+            
+            _logger.LogWarning("Unexpected API response format: {Response}", responseBody);
+            return string.Empty;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error transcribing speech");
-            return string.Empty;
-        }
-    }
-    
-    private async Task<string> ConvertStreamToBase64(Stream stream)
-    {
-        using (MemoryStream memoryStream = new MemoryStream())
-        {
-            await stream.CopyToAsync(memoryStream);
-            return Convert.ToBase64String(memoryStream.ToArray());
-        }
-    }
-    
-    private string ExtractTranscriptionFromAnthropicResponse(string response)
-    {
-        try
-        {
-            // Parse the JSON response
-            var jsonResponse = JsonSerializer.Deserialize<JsonElement>(response);
-            
-            // Extract the content text from the response
-            if (jsonResponse.TryGetProperty("content", out var content) &&
-                content.ValueKind == JsonValueKind.Array &&
-                content.GetArrayLength() > 0)
-            {
-                var firstContent = content[0];
-                if (firstContent.TryGetProperty("text", out var textElement))
-                {
-                    string fullText = textElement.GetString() ?? string.Empty;
-                    
-                    // Remove any explanations, keeping only the transcription
-                    // This is a simple approach - in a real app you might need more sophisticated parsing
-                    string[] markers = { "Transcription:", "Here's the transcription:", "Transcript:" };
-                    foreach (var marker in markers)
-                    {
-                        int index = fullText.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-                        if (index >= 0)
-                        {
-                            fullText = fullText.Substring(index + marker.Length).Trim();
-                            break;
-                        }
-                    }
-                    
-                    // Remove any closing comments
-                    string[] endMarkers = { "End of transcription", "End of transcript", "That's all" };
-                    foreach (var marker in endMarkers)
-                    {
-                        int index = fullText.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-                        if (index >= 0)
-                        {
-                            fullText = fullText.Substring(0, index).Trim();
-                            break;
-                        }
-                    }
-                    
-                    return fullText;
-                }
-            }
-            
-            return string.Empty;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error parsing Anthropic response for transcription");
             return string.Empty;
         }
     }

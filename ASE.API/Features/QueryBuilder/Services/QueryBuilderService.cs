@@ -36,7 +36,7 @@ public class QueryBuilderService
             var prompt = ConstructAIPrompt(request, schemaInfo);
             
             // 3. Call AI service to generate query
-            var generatedQuery = await CallAnthropicServiceAsync(prompt, request.QueryType);
+            var generatedQuery = await CallOpenAIServiceAsync(prompt, request.QueryType);
             
             // 4. Optional: Execute query to get preview data
             var previewData = await TryExecuteQueryAsync(generatedQuery, request.QueryType);
@@ -116,30 +116,36 @@ public class QueryBuilderService
         return promptBuilder.ToString();
     }
     
-    private async Task<string> CallAnthropicServiceAsync(string prompt, string queryType)
+    private async Task<string> CallOpenAIServiceAsync(string prompt, string queryType)
     {
-        // Get configuration for Anthropic API
+        // Get configuration for OpenAI API
         string apiKey = _configuration["AIService:ApiKey"] ?? "mock-key";
-        string endpoint = _configuration["AIService:Endpoint"] ?? "https://api.anthropic.com/v1/messages";
+        string endpoint = _configuration["AIService:Endpoint"] ?? "https://api.openai.com/v1/chat/completions";
         
         // Mock implementation for development - in reality you'd send the request to an AI model
-        if (apiKey == "mock-key")
+        if (apiKey == "mock-key" || string.IsNullOrEmpty(apiKey))
         {
             // This is just a placeholder. In a real implementation, you would send a request to an AI model.
             return MockGenerateQuery(prompt, queryType);
         }
 
-        // Set up the request to Anthropic's Messages API
+        // Set up the request to OpenAI Chat Completions API
         var requestData = new
         {
-            model = "claude-3-opus-20240229",
-            max_tokens = 1000,
-            temperature = 0.2,
+            model = "gpt-4o",
             messages = new[]
             {
-                new { role = "user", content = prompt }
+                new { 
+                    role = "system", 
+                    content = "You are a database query expert that generates precise database queries based on natural language requests and database schemas."
+                },
+                new {
+                    role = "user",
+                    content = prompt
+                }
             },
-            system = "You are a database query expert that generates precise database queries based on natural language requests and database schemas."
+            temperature = 0.2,
+            max_tokens = 1000
         };
         
         var content = new StringContent(
@@ -147,10 +153,9 @@ public class QueryBuilderService
             Encoding.UTF8,
             "application/json");
             
-        // Add Anthropic API key to headers
+        // Add OpenAI API key to headers
         _httpClient.DefaultRequestHeaders.Clear();
-        _httpClient.DefaultRequestHeaders.Add("x-api-key", apiKey);
-        _httpClient.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
         
         try
         {
@@ -159,18 +164,18 @@ public class QueryBuilderService
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError($"Anthropic API returned {response.StatusCode}: {errorContent}");
-                throw new Exception($"Anthropic API returned {response.StatusCode}");
+                _logger.LogError($"OpenAI API returned {response.StatusCode}: {errorContent}");
+                throw new Exception($"OpenAI API returned {response.StatusCode}");
             }
             
             var responseBody = await response.Content.ReadAsStringAsync();
             
-            // Parse the Anthropic response
-            return ExtractGeneratedQueryFromAnthropicResponse(responseBody);
+            // Parse the OpenAI response
+            return ExtractGeneratedQueryFromOpenAIResponse(responseBody);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error calling Anthropic API");
+            _logger.LogError(ex, "Error calling OpenAI API");
             // Fallback to mock if API call fails
             return $"-- API call failed: {ex.Message}\n" + MockGenerateQuery(prompt, queryType);
         }
@@ -230,31 +235,33 @@ public class QueryBuilderService
         return "-- No specific query pattern matched. This is a placeholder for AI-generated content.";
     }
     
-    private string ExtractGeneratedQueryFromAnthropicResponse(string anthopicResponse)
+    private string ExtractGeneratedQueryFromOpenAIResponse(string openAIResponse)
     {
         try
         {
-            // Parse the JSON response from Anthropic
-            var responseObject = JsonSerializer.Deserialize<JsonElement>(anthopicResponse);
+            // Parse the JSON response from OpenAI
+            var responseObject = JsonSerializer.Deserialize<JsonElement>(openAIResponse);
             
-            // Extract the message content from Anthropic's response structure
-            if (responseObject.TryGetProperty("content", out var content) && 
-                content.ValueKind == JsonValueKind.Array &&
-                content.GetArrayLength() > 0)
+            // Extract the message content from OpenAI's response structure
+            if (responseObject.TryGetProperty("choices", out var choices) && 
+                choices.ValueKind == JsonValueKind.Array &&
+                choices.GetArrayLength() > 0)
             {
-                var firstContent = content[0];
-                if (firstContent.TryGetProperty("text", out var textElement))
+                var firstChoice = choices[0];
+                if (firstChoice.TryGetProperty("message", out var message) &&
+                    message.TryGetProperty("content", out var content))
                 {
-                    return textElement.GetString() ?? string.Empty;
+                    return content.GetString() ?? string.Empty;
                 }
             }
             
-            return "Error parsing Anthropic response";
+            _logger.LogWarning("Unexpected OpenAI response format: {Response}", openAIResponse);
+            return "-- Could not extract query from AI response.";
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error parsing Anthropic response");
-            return "Error parsing Anthropic response: " + ex.Message;
+            _logger.LogError(ex, "Error parsing OpenAI response");
+            return "-- Error parsing AI response.";
         }
     }
     

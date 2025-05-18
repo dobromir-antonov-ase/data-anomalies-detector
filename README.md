@@ -58,9 +58,20 @@ dotnet run
 
 ## Features
 
-- AI-powered query generation
-- Speech-to-text query input
+- AI-powered query generation using OpenAI API
+- Speech-to-text query input using OpenAI Whisper API
+- Finance Data Seeding
 - Data anomaly detection
+- Data patterns detection
 - Dealer management
 - Finance submissions tracking
-- Master templates 
+- Master templates
+
+## Setting Up OpenAI API Integration
+
+This application uses OpenAI's GPT-4o for generating database queries and Whisper API for speech-to-text transcription. To use these features, you need to:
+
+1. Get an API key from OpenAI: [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+
+
+The query builder will use mock data if no API key is provided. 
