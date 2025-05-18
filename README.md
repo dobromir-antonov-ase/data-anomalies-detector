@@ -29,7 +29,14 @@ The deployment process:
 2. Configures it for GitHub Pages hosting
 3. Uploads and deploys it to GitHub Pages
 
-### Accessing the Deployed ApplicationOnce deployed, the application will be available at:`https://[your-github-username].github.io/DataAnomaliesDetectorAI/`### Configuring the API URLBefore deploying to GitHub Pages, update the API URL in `ASE.UI/src/app/core/services/api-config.service.ts` to point to your deployed API instance. The current configuration checks if the application is running on GitHub Pages and uses a different API URL accordingly.
+### Accessing the Deployed Application
+
+Once deployed, the application will be available at:
+`https://[your-github-username].github.io/DataAnomaliesDetectorAI/`
+
+### Configuring the API URL
+
+Before deploying to GitHub Pages, update the API URL in `ASE.UI/src/app/core/services/api-config.service.ts` to point to your deployed API instance. The current configuration checks if the application is running on GitHub Pages and uses a different API URL accordingly.
 
 ## Local Development Setup
 

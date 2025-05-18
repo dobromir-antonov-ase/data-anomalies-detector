@@ -27,17 +27,17 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./ASE.UI
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Build
         working-directory: ./ASE.UI
         run: npm run build:github-pages
 
       - name: Create .nojekyll file
-        run: touch ./ASE.UI/dist/.nojekyll
+        run: touch ./ASE.UI/dist/ase-client/.nojekyll
 
       - name: Create 404.html for SPA routing
-        run: cp ./ASE.UI/dist/index.html ./ASE.UI/dist/404.html
+        run: cp ./ASE.UI/dist/ase-client/index.html ./ASE.UI/dist/ase-client/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -45,7 +45,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './ASE.UI/dist'
+          path: './ASE.UI/dist/ase-client'
 
   deploy:
     environment:
