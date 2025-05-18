@@ -22,6 +22,9 @@ export class QueryBuilderComponent implements OnInit {
   errorMessage: string = '';
   mediaRecorder: MediaRecorder | null = null;
   audioChunks: Blob[] = [];
+  // Audio recording settings
+  audioContext: AudioContext | null = null;
+  audioStream: MediaStream | null = null;
 
   constructor(
     private queryBuilderService: QueryBuilderService,
@@ -30,6 +33,8 @@ export class QueryBuilderComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadQueryTypes();
+    // Initialize audio context
+    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
   }
 
   loadQueryTypes(): void {
@@ -81,14 +86,17 @@ export class QueryBuilderComponent implements OnInit {
     
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
+        this.audioStream = stream;
         this.mediaRecorder = new MediaRecorder(stream);
         this.mediaRecorder.addEventListener('dataavailable', (event) => {
           this.audioChunks.push(event.data);
         });
 
         this.mediaRecorder.addEventListener('stop', () => {
-          const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
-          this.processAudioInput(audioBlob);
+          // Create a proper WAV file with headers
+          this.createWavFromBlobs(this.audioChunks).then(wavBlob => {
+            this.processAudioInput(wavBlob);
+          });
           
           // Stop all tracks to release the microphone
           stream.getTracks().forEach(track => track.stop());
@@ -150,5 +158,86 @@ export class QueryBuilderComponent implements OnInit {
       .catch(err => {
         console.error('Failed to copy text: ', err);
       });
+  }
+
+  // Helper method to properly format audio data as WAV
+  async createWavFromBlobs(audioChunks: Blob[]): Promise<Blob> {
+    // Combine all audio chunks into one blob
+    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+    
+    // Convert blob to array buffer
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    
+    // Decode the audio data
+    const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
+    
+    // Convert to WAV format with proper headers
+    const wavBlob = this.audioBufferToWav(audioBuffer);
+    
+    return wavBlob;
+  }
+  
+  // Convert AudioBuffer to WAV format
+  audioBufferToWav(audioBuffer: AudioBuffer): Blob {
+    const numOfChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+    
+    const bytesPerSample = bitDepth / 8;
+    const blockAlign = numOfChannels * bytesPerSample;
+    
+    const buffer = audioBuffer.getChannelData(0);
+    const dataLength = buffer.length * bytesPerSample;
+    const totalLength = 44 + dataLength;
+    
+    const arrayBuffer = new ArrayBuffer(totalLength);
+    const dataView = new DataView(arrayBuffer);
+    
+    // RIFF identifier
+    this.writeString(dataView, 0, 'RIFF');
+    // RIFF chunk length
+    dataView.setUint32(4, 36 + dataLength, true);
+    // RIFF type
+    this.writeString(dataView, 8, 'WAVE');
+    // Format chunk identifier
+    this.writeString(dataView, 12, 'fmt ');
+    // Format chunk length
+    dataView.setUint32(16, 16, true);
+    // Sample format (raw)
+    dataView.setUint16(20, format, true);
+    // Channel count
+    dataView.setUint16(22, numOfChannels, true);
+    // Sample rate
+    dataView.setUint32(24, sampleRate, true);
+    // Byte rate (sample rate * block align)
+    dataView.setUint32(28, sampleRate * blockAlign, true);
+    // Block align (channel count * bytes per sample)
+    dataView.setUint16(32, blockAlign, true);
+    // Bits per sample
+    dataView.setUint16(34, bitDepth, true);
+    // Data chunk identifier
+    this.writeString(dataView, 36, 'data');
+    // Data chunk length
+    dataView.setUint32(40, dataLength, true);
+    
+    // Write the PCM samples
+    const offset = 44;
+    for (let i = 0; i < buffer.length; i++) {
+      const sample = Math.max(-1, Math.min(1, buffer[i]));
+      // Scale to 16-bit range
+      const sampleValue = sample < 0 ? sample * 32768 : sample * 32767;
+      // Write 16-bit sample
+      dataView.setInt16(offset + i * 2, sampleValue, true);
+    }
+    
+    return new Blob([arrayBuffer], { type: 'audio/wav' });
+  }
+  
+  // Helper to write a string to a DataView
+  writeString(dataView: DataView, offset: number, string: string): void {
+    for (let i = 0; i < string.length; i++) {
+      dataView.setUint8(offset + i, string.charCodeAt(i));
+    }
   }
 } 

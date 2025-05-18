@@ -149,4 +149,19 @@ The application follows a client-server architecture with:
 
 ## 9. Conclusion
 
-The Data Anomalies Detector AI provides automotive businesses with a powerful tool to identify irregularities in their operations, improve compliance, and gain insights from their data. The modern architecture ensures scalability and maintainability, while the ML-powered analysis offers sophisticated anomaly detection capabilities. 
+The Data Anomalies Detector AI provides automotive businesses with a powerful tool to identify irregularities in their operations, improve compliance, and gain insights from their data. The modern architecture ensures scalability and maintainability, while the ML-powered analysis offers sophisticated anomaly detection capabilities.
+
+## Azure Services Integration
+
+### Azure App Service
+The backend API is hosted on Azure App Service, providing a scalable and reliable hosting environment for the .NET 9 API.
+
+### Azure Speech Services
+The application integrates with Azure Speech Services to provide speech-to-text capabilities in the AI Query Builder. This enables users to:
+
+- Perform voice-driven data analysis
+- Ask questions about anomalies verbally
+- Execute hands-free data querying
+
+#### Configuration
+See the [Azure Speech Service Configuration Guide](ASE.API/azure-speech-config.md) for detailed setup instructions. 
