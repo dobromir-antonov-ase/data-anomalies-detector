@@ -47,44 +47,6 @@ public class AnomalyDetectionService
         return allAnomalies.OrderByDescending(a => a.DetectedAt);
     }
     
-    // Method to detect anomalies for a specific dealer
-    public async Task<IEnumerable<DataAnomaly>> DetectAnomaliesByDealer(int dealerId)
-    {
-        var dealerAnomalies = new List<DataAnomaly>();
-        
-        // Get dealer information
-        var dealer = await _dbContext.Dealers.FindAsync(dealerId);
-        if (dealer == null)
-        {
-            return dealerAnomalies;
-        }
-        
-        // Get all submissions for this dealer
-        var dealerSubmissions = await _dbContext.FinanceSubmissions
-            .Where(fs => fs.DealerId == dealerId)
-            .Include(fs => fs.MasterTemplate)
-            .Include(fs => fs.Cells)
-            .OrderByDescending(fs => fs.SubmissionDate)
-            .ToListAsync();
-            
-        if (!dealerSubmissions.Any())
-        {
-            return dealerAnomalies;
-        }
-        
-        // 1. Detect submission-specific anomalies for the most recent submission
-        var mostRecentSubmission = dealerSubmissions.First();
-        dealerAnomalies.AddRange(await DetectAnomaliesInSubmission(mostRecentSubmission.Id));
-        
-        // 2. Detect dealer-specific patterns and trends
-        dealerAnomalies.AddRange(await DetectDealerPatterns(dealerSubmissions));
-        
-        // 3. Compare with industry averages
-        dealerAnomalies.AddRange(await CompareWithIndustryAverages(dealerId));
-        
-        return dealerAnomalies;
-    }
-    
     public async Task<IEnumerable<DataAnomaly>> DetectAnomaliesInSubmission(int submissionId)
     {
         // Get the finance submission including all related data

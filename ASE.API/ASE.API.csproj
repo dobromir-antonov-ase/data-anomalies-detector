@@ -7,14 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Features\AnomalyDetection\ML\**" />
+    <Content Remove="Features\AnomalyDetection\ML\**" />
+    <EmbeddedResource Remove="Features\AnomalyDetection\ML\**" />
+    <None Remove="Features\AnomalyDetection\ML\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.4" />
     <PackageReference Include="Microsoft.ML" Version="3.0.0" />
     <PackageReference Include="Microsoft.ML.TimeSeries" Version="3.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Features\AnomalyDetection\ML\" />
   </ItemGroup>
 
 </Project>
