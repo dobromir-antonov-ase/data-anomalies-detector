@@ -33,13 +33,17 @@ jobs:
         working-directory: ./ASE.UI
         run: npm run build:github-pages
 
+      - name: Create 404.html
+        working-directory: ./ASE.UI
+        run: cp dist/browser/index.html dist/browser/404.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './ASE.UI/dist'
+          path: './ASE.UI/dist/browser'
 
   deploy:
     environment:
