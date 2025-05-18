@@ -1,77 +1,152 @@
-# Data Anomalies Detector AI
+# Data Anomalies Detector AI - Project Design Document
 
-An AI-powered application for detecting anomalies in data and generating database queries.
+## 1. Introduction
 
-## Deployment to GitHub Pages
+### 1.1 Purpose
+The Data Anomalies Detector AI is a comprehensive system designed to identify and analyze anomalies in automotive sales and finance data. It helps automotive dealerships detect irregularities in their operations, improve compliance, and optimize business processes through machine learning-powered analysis.
 
-The UI of this application is configured to be deployed to GitHub Pages. The deployment process is automated using GitHub Actions.
+### 1.2 Scope
+This system covers anomaly detection across dealer operations, finance submissions, and sales patterns to identify both individual anomalies and systemic issues.
 
-### Prerequisites for GitHub Pages Deployment
+## 2. System Architecture
 
-1. Enable GitHub Pages in your repository:
-   - Go to your repository settings
-   - Scroll down to the "GitHub Pages" section
-   - Select "GitHub Actions" as the source
+### 2.1 High-Level Architecture
+The application follows a client-server architecture with:
+- Angular-based frontend (ASE.UI)
+- .NET 9 API backend (ASE.API)
+- In-memory database for development/demo
 
-2. Make sure your repository has the necessary GitHub Actions permissions:
-   - Go to your repository settings
-   - Navigate to "Actions" > "General"
-   - Ensure "Read and write permissions" is selected under "Workflow permissions"
+### 2.2 Deployment Architecture
+- Frontend: GitHub Pages
+- Backend: Azure App Service
+- Communication: RESTful API with CORS
 
-### Automatic Deployment
-
-The UI is automatically deployed to GitHub Pages when:
-- Code is pushed to the main branch
-- The workflow is manually triggered
-
-The deployment process:
-1. Builds the Angular application
-2. Configures it for GitHub Pages hosting
-3. Uploads and deploys it to GitHub Pages
-
-### Accessing the Deployed Application
-
-Once deployed, the application will be available at:
-`https://[your-github-username].github.io/DataAnomaliesDetectorAI/`
-
-### Configuring the API URL
-
-Before deploying to GitHub Pages, update the API URL in `ASE.UI/src/app/core/services/api-config.service.ts` to point to your deployed API instance. The current configuration checks if the application is running on GitHub Pages and uses a different API URL accordingly.
-
-## Local Development Setup
-
-### UI (Angular)
-
-```bash
-cd ASE.UI
-npm install
-npm start
+### 2.3 Component Diagram
+```
+┌────────────────────┐         ┌─────────────────────┐
+│   ASE.UI (Angular) │         │ ASE.API (.NET Core) │
+│                    │         │                     │
+│  ┌──────────────┐  │         │ ┌───────────────┐   │
+│  │   Core       │  │         │ │  Features     │   │
+│  │   - Layout   │  │ HTTP/S  │ │  - Dealers    │   │
+│  │   - Models   │◄─┼─────────┼─►- Submissions  │   │
+│  │   - Services │  │         │ │  - Anomaly    │   │
+│  └──────────────┘  │         │ │    Detection  │   │
+│                    │         │ └───────────────┘   │
+│  ┌──────────────┐  │         │                     │
+│  │  Features    │  │         │ ┌───────────────┐   │
+│  │  - Dashboard │  │         │ │  Services     │   │
+│  │  - Dealers   │  │         │ │  - ML Models  │   │
+│  │  - Anomalies │  │         │ │  - Data       │   │
+│  └──────────────┘  │         │ │    Analysis   │   │
+│                    │         │ └───────────────┘   │
+└────────────────────┘         └─────────────────────┘
 ```
 
-### API (.NET Core)
+## 3. Frontend Design
 
-```bash
-cd ASE.API
-dotnet restore
-dotnet run
-```
+### 3.1 UI Framework
+- Angular 19.x with Material UI components
+- Responsive layout with sidebar navigation
+- Theme customization support
 
-## Features
+### 3.2 Key Components
+- **Dashboard**: Overview of detected anomalies, statistics, charts
+- **Dealers**: Management, view, and analysis of dealer data
+- **Finance Submissions**: Review and management of finance documents
+- **Templates**: Configuration of master templates for data validation
+- **Anomaly Detection**: Visualization of detected patterns and anomalies
+- **Query Builder**: AI-powered natural language query interface
 
-- AI-powered query generation using OpenAI API
-- Speech-to-text query input using OpenAI Whisper API
-- Finance Data Seeding
-- Data anomaly detection
-- Data patterns detection
-- Dealer management
-- Finance submissions tracking
-- Master templates
+### 3.3 State Management
+- Angular services with reactive patterns
+- HTTP client for API communication
 
-## Setting Up OpenAI API Integration
+## 4. Backend Design
 
-This application uses OpenAI's GPT-4o for generating database queries and Whisper API for speech-to-text transcription. To use these features, you need to:
+### 4.1 API Architecture
+- Minimal API approach using .NET 9
+- Feature-based organization (vertical slices)
+- RESTful endpoints with JSON responses
 
-1. Get an API key from OpenAI: [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+### 4.2 Key Features
+- **Dealer Management**: CRUD operations for dealer entities
+- **Finance Submissions**: Document handling and validation
+- **Anomaly Detection**: Machine learning algorithms to identify:
+  - Time-series anomalies
+  - Data pattern irregularities
+  - Cross-entity anomalies
+- **Query Builder**: Natural language to data query processing
 
+### 4.3 Data Access
+- Entity Framework Core with InMemory provider (for demo)
+- Structured data models with relationships
 
-The query builder will use mock data if no API key is provided. 
+### 4.4 ML Capabilities
+- Utilizing Microsoft.ML and ML.TimeSeries libraries
+- Anomaly detection algorithms:
+  - Spike Detection
+  - Change Point Detection
+  - Seasonal Trend Decomposition
+
+## 5. Security Considerations
+
+### 5.1 Authentication & Authorization
+- HTTPS communication required
+- CORS configured to restrict access to allowed domains
+
+### 5.2 Data Protection
+- Input validation and sanitization
+- Rate limiting for query operations
+
+## 6. Development & Deployment
+
+### 6.1 Development Environment
+- .NET 9 SDK
+- Node.js and npm
+- Visual Studio 2022 or VS Code
+
+### 6.2 CI/CD Pipelines
+- GitHub Actions for automated deployments
+- Frontend deployment to GitHub Pages
+- Backend deployment to Azure App Service
+
+### 6.3 Testing Strategy
+- Unit tests for business logic
+- Integration tests for API endpoints
+- UI component testing
+
+## 7. Future Enhancements
+
+### 7.1 Short-term
+- Enhanced visualization capabilities
+- Export and reporting features
+- Expanded ML model accuracy
+
+### 7.2 Long-term
+- Real-time data processing
+- Predictive analytics for future anomalies
+- Multi-tenant support for larger deployments
+
+## 8. Technical Specifications
+
+### 8.1 Frontend
+- Angular 19.x
+- Material UI components
+- ECharts for data visualization
+- Typescript 5.7+
+
+### 8.2 Backend
+- .NET 9
+- Microsoft.ML 3.0
+- Entity Framework Core
+- Minimal API pattern
+
+### 8.3 Deployment
+- GitHub Pages (UI)
+- Azure App Service (API)
+- GitHub Actions (CI/CD)
+
+## 9. Conclusion
+
+The Data Anomalies Detector AI provides automotive businesses with a powerful tool to identify irregularities in their operations, improve compliance, and gain insights from their data. The modern architecture ensures scalability and maintainability, while the ML-powered analysis offers sophisticated anomaly detection capabilities. 
