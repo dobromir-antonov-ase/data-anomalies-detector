@@ -26,16 +26,17 @@ jobs:
         run: dotnet build --configuration Release
       
       - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}\myapp"
       
       - name: List published files (diagnostic)
-        run: dir "${{env.DOTNET_ROOT}}/myapp" /s
+        shell: cmd
+        run: dir "${{env.DOTNET_ROOT}}\myapp"
       
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          path: ${{env.DOTNET_ROOT}}\myapp
 
   deploy:
     runs-on: windows-latest
@@ -50,23 +51,10 @@ jobs:
           name: .net-app
       
       - name: List deployment files (diagnostic)
-        run: dir /s
+        shell: cmd
+        run: dir
       
-      - name: Check Azure WebApp information (diagnostic)
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      
-      - name: Get WebApp info
-        run: |
-          az webapp show --name data-anomaly-api --resource-group data-anomaly-detector_group
-        continue-on-error: true
-      
-      - name: Enable detailed deployment logging
-        run: |
-          echo "AZURE_LOG_LEVEL=verbose" >> $GITHUB_ENV
-      
-      - name: Deploy to Azure Web App
+      - name: Deploy to Azure Web App with verbose logging
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
@@ -74,9 +62,5 @@ jobs:
           slot-name: 'Production'
           package: .
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_3C2B8A0D68DA4C4A83899D2423113910 }}
-      
-      - name: View recent logs if deployment fails
-        if: failure()
-        run: |
-          az webapp log tail --name data-anomaly-api --resource-group data-anomaly-detector_group
-        continue-on-error: true
+          respect-pom-xml: false
+          verbose: true
