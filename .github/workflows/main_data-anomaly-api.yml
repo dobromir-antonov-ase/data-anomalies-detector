@@ -26,7 +26,7 @@ jobs:
         run: dotnet build --configuration Release
       
       - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}\myapp" --self-contained false /p:RuntimeIdentifier="win-x64"
+        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}\myapp" --no-self-contained -r win-x86
       
       - name: List published files (diagnostic)
         shell: cmd
