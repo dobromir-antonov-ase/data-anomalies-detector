@@ -151,17 +151,49 @@ The application follows a client-server architecture with:
 
 The Data Anomalies Detector AI provides automotive businesses with a powerful tool to identify irregularities in their operations, improve compliance, and gain insights from their data. The modern architecture ensures scalability and maintainability, while the ML-powered analysis offers sophisticated anomaly detection capabilities.
 
-## Azure Services Integration
 
-### Azure App Service
-The backend API is hosted on Azure App Service, providing a scalable and reliable hosting environment for the .NET 9 API.
 
-### Azure Speech Services
-The application integrates with Azure Speech Services to provide speech-to-text capabilities in the AI Query Builder. This enables users to:
+## Query Builder
 
-- Perform voice-driven data analysis
-- Ask questions about anomalies verbally
-- Execute hands-free data querying
+The Query Builder is a powerful AI-assisted feature that translates natural language questions into structured database queries, making data exploration accessible to non-technical users.
 
-#### Configuration
-See the [Azure Speech Service Configuration Guide](ASE.API/azure-speech-config.md) for detailed setup instructions. 
+### Key Capabilities
+
+- **Natural Language Processing**: Convert plain English questions into SQL or LINQ queries
+- **Voice Recognition**: Speak queries instead of typing using Azure Speech Services
+- **Query Preview**: View generated queries with syntax highlighting
+- **Result Visualization**: Display query results in tables with sorting capabilities
+- **Multi-format Support**: Generate both SQL and LINQ query formats
+
+### Technical Implementation
+
+- **Frontend**: Angular component with voice recording capabilities and proper WAV encoding
+- **Backend**: .NET service using AI to transform natural language into database queries
+- **Speech Processing**:
+  - Multiple fallback approaches for speech recognition
+  - WAV header validation and repair
+  - Push stream approach for problematic audio files
+  - Diagnostic endpoints for troubleshooting
+
+### Usage Examples
+
+Users can ask questions like:
+- "Show me sales data for the last quarter"
+- "Find all dealers with compliance issues this month"
+- "List the top 5 finance submissions with anomalies"
+- "Compare performance between regions"
+
+### Future Enhancements
+
+#### Short-term
+- **Direct Query Execution**: Enable immediate execution of generated queries against the database
+- **Query History**: Save and recall previously executed queries
+- **Enhanced Voice Recognition**: Support for industry-specific terminology
+- **Export Options**: Download query results in multiple formats (CSV, Excel, PDF)
+
+#### Long-term
+- **Query Recommendations**: AI-suggested queries based on user behavior and data patterns
+- **Natural Language Query Builder**: Interactive refinement of queries through conversation
+- **Text-to-Prompt Integration**: Generate and execute complex analysis workflows from simple text descriptions
+- **Visualization Suggestions**: Automatically recommend appropriate charts based on query results
+- **Cross-Data Integration**: Query across multiple data sources with a single natural language request 
