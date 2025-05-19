@@ -13,22 +13,24 @@ jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: read #This is required for actions/checkout
-
+      contents: read
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.x'
-
+      
       - name: Build with dotnet
         run: dotnet build --configuration Release
-
+      
       - name: dotnet publish
         run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
-
+      
+      - name: List published files (diagnostic)
+        run: dir "${{env.DOTNET_ROOT}}/myapp" /s
+      
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
@@ -41,12 +43,28 @@ jobs:
     environment:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-    
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: .net-app
+      
+      - name: List deployment files (diagnostic)
+        run: dir /s
+      
+      - name: Check Azure WebApp information (diagnostic)
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Get WebApp info
+        run: |
+          az webapp show --name data-anomaly-api --resource-group data-anomaly-detector_group
+        continue-on-error: true
+      
+      - name: Enable detailed deployment logging
+        run: |
+          echo "AZURE_LOG_LEVEL=verbose" >> $GITHUB_ENV
       
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -56,3 +74,9 @@ jobs:
           slot-name: 'Production'
           package: .
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_3C2B8A0D68DA4C4A83899D2423113910 }}
+      
+      - name: View recent logs if deployment fails
+        if: failure()
+        run: |
+          az webapp log tail --name data-anomaly-api --resource-group data-anomaly-detector_group
+        continue-on-error: true
