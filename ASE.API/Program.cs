@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
-
+ 
 // Add CORS services
 builder.Services.AddCors(options =>
 {
